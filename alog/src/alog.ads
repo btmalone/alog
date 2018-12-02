@@ -45,35 +45,51 @@ package Alog is
    ---------------------------------------------------------------------
 
    --  Methods for each log message level.
-   procedure Info (msg : String);
-   procedure Warn (msg : String);
-   procedure Error (msg : String);
-   procedure Fatal (msg : String);
+   procedure Info (Msg : String);
+   procedure Warn (Msg : String);
+   procedure Error (Msg : String);
+   procedure Fatal (Msg : String);
 
    ---------------------------------------------------------------------
    --  Configuration
    ---------------------------------------------------------------------
 
    --  Set where the logs saved. By default set to BOTH.
-   procedure Set_LogTo (output : LogTo);
+   procedure Set_LogTo (Output : LogTo);
 
    --  Helper method to you can pass a String representation of LogTo.
-   procedure Set_LogTo (output : String);
+   procedure Set_LogTo (Output : String);
 
    --  Set what the threshold level of stdout will be.
-   procedure Set_Stdout_Threshold (lvl : Level);
+   procedure Set_Stdout_Threshold (Lvl : Level);
 
    --  Helper method to you can pass a String representation of Level.
-   procedure Set_Stdout_Threshold (lvl : String);
+   procedure Set_Stdout_Threshold (Lvl : String);
 
    --  Set where the log files shoudl be saved.
-   procedure Set_File_Path (path : String);
+   procedure Set_File_Path (Path : String);
 
    ---------------------------------------------------------------------
    --  Statistics
    ---------------------------------------------------------------------
 
    --  Return the number of lines written to a specified log file.
-   function Lines (lvl : Level) return Natural;
+   function Lines (Lvl : Level) return Natural;
+
+private
+   --  Record of statistics about the log levels.
+   type Level_Stats is record
+      Lines : Natural := 0;
+   end record;
+
+   --  Array of level stats for each log level.
+   type Log_Stats is array (Level) of Level_Stats;
+   Stats : Log_Stats;
+
+   function Program_Name (Cmd : String) return String;
+   function Program_Time (Time : String) return String;
+
+   Files_Created : Boolean := False;
+   Files_Location_Set : Boolean := False;
 
 end Alog;

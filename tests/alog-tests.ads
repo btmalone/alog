@@ -19,9 +19,11 @@
 with AUnit; use AUnit;
 with AUnit.Test_Cases; use AUnit.Test_Cases;
 
-package Alog_Tests is
+package Alog.Tests is
 
    type Alog_Test is new Test_Cases.Test_Case with null record;
+
+   procedure Set_Up (T : in out Alog_Test);
 
    --  Register routines to be run
    procedure Register_Tests (T : in out Alog_Test);
@@ -29,4 +31,4 @@ package Alog_Tests is
    --  Provide name identifying the test case
    function Name (T : Alog_Test) return Message_String;
 
-end Alog_Tests;
+end Alog.Tests;

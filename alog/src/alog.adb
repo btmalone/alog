@@ -29,6 +29,7 @@ with Ada.Calendar.Formatting;
 with Ada.Command_Line;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
+with Ada.Strings.Unbounded;
 --  with GNAT.Sockets;
 
 package body Alog is
@@ -38,6 +39,7 @@ package body Alog is
    package ACL renames Ada.Command_Line;
    package TIO renames Ada.Text_IO;
    package AEV renames Ada.Environment_Variables;
+   package ASU renames Ada.Strings.Unbounded;
 
    ---------------------------------------------------------------------
    --  Private method declarations
@@ -45,13 +47,10 @@ package body Alog is
 
    procedure Create_Files;
 
-   function Format_Output (lvl : Level; msg : String) return String;
-   procedure Output (lvl : Level; msg : String);
-   procedure Output_Stdout (lvl : Level; msg : String);
-   procedure Output_File (lvl : Level; msg : String);
-
-   function Program_Name return String;
-   function Program_Time return String;
+   function Format_Output (Lvl : Level; Msg : String) return String;
+   procedure Output (Lvl : Level; Msg : String);
+   procedure Output_Stdout (Lvl : Level; Msg : String);
+   procedure Output_File (Lvl : Level; Msg : String);
 
    ---------------------------------------------------------------------
    --  Import C menthods
@@ -77,22 +76,11 @@ package body Alog is
    Log_Location : LogTo := BOTH;
 
    --  By default write all log files to the tmp directory.
-   File_Location : String := "/tmp/";
-
-   Files_Created : Boolean := False;
+   File_Location : ASU.Unbounded_String;
 
    --  Array of a file handler for each log level.
    type Log_Files is array (Level) of TIO.File_Type;
    Files : Log_Files;
-
-   --  Record of statistics about the log levels.
-   type Level_Stats is record
-      Lines : Natural := 0;
-   end record;
-
-   --  Array of level stats for each log level.
-   type Log_Stats is array (Level) of Level_Stats;
-   Stats : Log_Stats;
 
    --  Mutex so the log can be multithreaded.
    protected type Mutex is
@@ -124,22 +112,25 @@ package body Alog is
    --  <program name>.<host>.<user>.log.<LEVEL>.<time>.<pid>
    --  in the defined file location.
    procedure Create_Files is
-      cmd  : constant String := Program_Name;
-      host : constant String := "hostname"; --  GNAT.Sockets.Host_Name;
-      user : constant String := AEV.Value ("USER");
-      time : constant String := Program_Time;
-      pid  : constant String := Integer'Image (Get_PID);
-      prefix : constant String := File_Location & cmd & "." &
-                           host & "." & user & ".log.";
-      suffix : constant String := "." & time & "." & pid;
+      Cmd  : constant String := Program_Name (ACL.Command_Name);
+      Host : constant String := "hostname"; --  GNAT.Sockets.Host_Name;
+      User : constant String := AEV.Value ("USER");
+      Time : constant String := Program_Time (ACF.Image (AC.Clock));
+      Pid  : constant String := Integer'Image (Get_PID);
+      Prefix : constant String := Cmd & "." &
+                           Host & "." & User & ".log.";
+      Suffix : constant String := "." & Time & "." &
+                          (Pid (Pid'First + 1 .. Pid'Last));
    begin
-      TIO.Put_Line (host);
-      --  TIO.Put_Line (GNAT.Source_Info.File);
-      for lvl in Files'Range loop
+      if not Files_Location_Set then
+         File_Location := ASU.To_Unbounded_String ("/tmp/");
+      end if;
+      for Lvl in Files'Range loop
          begin
-            TIO.Create (File => Files (lvl),
+            TIO.Create (File => Files (Lvl),
                         Mode => TIO.Out_File,
-                        Name => prefix & Level'Image (lvl) & suffix);
+                        Name => ASU.To_String (File_Location) &
+                           Prefix & Level'Image (Lvl) & Suffix);
             exception
                when others =>
                   raise Program_Error with "UNABLE TO CREATE LOGS";
@@ -151,101 +142,99 @@ package body Alog is
    --  Take the time the program was run and create a file friendly
    --  representation of the string.
    --  e.g 2018-12-01 08:08:20 -> 20181201.080820
-   function Program_Time return String is
-      time : constant String := ACF.Image (AC.Clock);
-      str : String (1 .. 15);
-      pos : Natural := str'First;
+   function Program_Time (Time : String) return String is
+      Str : String (1 .. 15);
+      Pos : Natural := Str'First;
    begin
-      for i in time'Range loop
-         case time (i) is
+      for i in Time'Range loop
+         case Time (i) is
             when '-' =>
                null;
             when ':' =>
                null;
             when ' ' =>
-               str (pos) := '.';
-               pos := pos + 1;
+               Str (Pos) := '.';
+               Pos := Pos + 1;
             when others =>
-               str (pos) := time (i);
-               pos := pos + 1;
+               Str (Pos) := Time (i);
+               Pos := Pos + 1;
          end case;
       end loop;
-      return str;
+      return Str;
    end Program_Time;
 
    --  Take the time the command name and remove all the dots and slashes
    --  so the program name can be used in the log file name.
-   function Program_Name return String is
-      cmd : constant String := ACL.Command_Name;
-      pos : Integer := 0;
+   function Program_Name (Cmd : String) return String is
+      Pos : Integer := 0;
    begin
-      for i in cmd'Range loop
+      for i in Cmd'Range loop
          --  Go backwards through the string till a / is found
-         if cmd (cmd'Last - i) = '/' then
-            pos := i;
+         if Cmd (Cmd'Last - i) = '/' then
+            Pos := i;
             exit;
          end if;
       end loop;
-      return (cmd (cmd'Last - pos + 1 .. cmd'Last));
+      return (Cmd (Cmd'Last - Pos + 1 .. Cmd'Last));
    end Program_Name;
 
    --  Method to format the log message for both the console and file.
-   function Format_Output (lvl : Level; msg : String) return String is
+   function Format_Output (Lvl : Level; Msg : String) return String is
    begin
-      return ACF.Image (AC.Clock) & " " & Level'Image (lvl) & " " & msg;
+      return ACF.Image (AC.Clock) & " " & Level'Image (Lvl) & " " & Msg;
    end Format_Output;
 
    --  Output the log message to the console if it is at or above the log
    --  threshold.
-   procedure Output_Stdout (lvl : Level; msg : String) is
+   procedure Output_Stdout (Lvl : Level; Msg : String) is
    begin
       --  Only output to StdOut if the level of the message is
       --  higher than the threshold.
-      if lvl >= Stdout_Threshold then
-         TIO.Put_Line (Format_Output (lvl, msg));
+      if Lvl >= Stdout_Threshold then
+         TIO.Put_Line (Format_Output (Lvl, Msg));
       end if;
    end Output_Stdout;
 
    --  Output the log message to the files.
-   procedure Output_File (lvl : Level; msg : String) is
+   procedure Output_File (Lvl : Level; Msg : String) is
    begin
       --  Create the files if this is the first call.
       if not Files_Created then
          Create_Files;
       end if;
 
-      --  Start at INFO log and add the msg then step up to the
+      --  Start at INFO log and add the Msg then step up to the
       --  next log checking everytime if you are now above
       --  your amount.
       for i in Level'Range loop
-         if i <= lvl then
-            TIO.Put_Line (Files (i), Format_Output (lvl, msg));
+         if i <= Lvl then
+            TIO.Put_Line (Files (i), Format_Output (Lvl, Msg));
             Stats (i).Lines := Stats (i).Lines + 1;
          end if;
       end loop;
 
       --  If the message recieved is FATAL throw a error to
       --  terminate the program.
-      if lvl = FATAL then
+      if Lvl = FATAL then
          raise Program_Error with "FATAL ERROR OCCURED";
       end if;
    end Output_File;
 
    --  Common output method that logs based on the log location.
    --  Lock surrounding.
-   procedure Output (lvl : Level; msg : String) is
+   procedure Output (Lvl : Level; Msg : String) is
    begin
       Lock.Seize;
       case Log_Location is
          when NONE =>
             null;
          when STDOUT =>
-            Output_Stdout (lvl, msg);
+            Output_Stdout (Lvl, Msg);
          when FILE =>
-            Output_File (lvl, msg);
+            Output_File (Lvl, Msg);
          when BOTH =>
-            Output_Stdout (lvl, msg);
-            Output_File (lvl, msg);
+            Output_Stdout (Lvl, Msg);
+            Output_File (Lvl, Msg);
       end case;
       Lock.Release;
    end Output;
@@ -258,62 +247,63 @@ package body Alog is
    --  Logging
    ---------------------------------------------------------------------
 
-   procedure Info (msg : String) is
+   procedure Info (Msg : String) is
    begin
-      Output (INFO, msg);
+      Output (INFO, Msg);
    end Info;
 
-   procedure Warn (msg : String) is
+   procedure Warn (Msg : String) is
    begin
-      Output (WARN, msg);
+      Output (WARN, Msg);
    end Warn;
 
-   procedure Error (msg : String) is
+   procedure Error (Msg : String) is
    begin
-      Output (ERROR, msg);
+      Output (ERROR, Msg);
    end Error;
 
-   procedure Fatal (msg : String) is
+   procedure Fatal (Msg : String) is
    begin
-      Output (FATAL, msg);
+      Output (FATAL, Msg);
    end Fatal;
 
    ---------------------------------------------------------------------
    --  Configuration
    ---------------------------------------------------------------------
 
-   procedure Set_LogTo (output : LogTo) is
+   procedure Set_LogTo (Output : LogTo) is
    begin
-      Log_Location := output;
+      Log_Location := Output;
    end Set_LogTo;
 
-   procedure Set_LogTo (output : String) is
+   procedure Set_LogTo (Output : String) is
    begin
-      Set_LogTo (LogTo'Value (output));
+      Set_LogTo (LogTo'Value (Output));
    end Set_LogTo;
 
-   procedure Set_Stdout_Threshold (lvl : Level) is
+   procedure Set_Stdout_Threshold (Lvl : Level) is
    begin
-      Stdout_Threshold := lvl;
+      Stdout_Threshold := Lvl;
    end Set_Stdout_Threshold;
 
-   procedure Set_Stdout_Threshold (lvl : String) is
+   procedure Set_Stdout_Threshold (Lvl : String) is
    begin
-      Set_Stdout_Threshold (Level'Value (lvl));
+      Set_Stdout_Threshold (Level'Value (Lvl));
    end Set_Stdout_Threshold;
 
-   procedure Set_File_Path (path : String) is
+   procedure Set_File_Path (Path : String) is
    begin
-      File_Location := path;
+      File_Location := ASU.To_Unbounded_String (Path);
+      Files_Location_Set := True;
    end Set_File_Path;
 
    ---------------------------------------------------------------------
    --  Statistics
    ---------------------------------------------------------------------
 
-   function Lines (lvl : Level) return Natural is
+   function Lines (Lvl : Level) return Natural is
    begin
-      return Stats (lvl).Lines;
+      return Stats (Lvl).Lines;
    end Lines;
 
 end Alog;
