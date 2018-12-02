@@ -22,6 +22,7 @@ with Alog;
 package body Alog_Tests is
 
    procedure Test_Simple_Add (T : in out Test_Cases.Test_Case'Class);
+   procedure Test_Simple_Add_2 (T : in out Test_Cases.Test_Case'Class);
 
    procedure Test_Simple_Add (T : in out Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
@@ -29,8 +30,18 @@ package body Alog_Tests is
       Actual : Natural;
    begin
       Actual := Alog.Lines (Alog.INFO);
+      Alog.Info ("foo bar buzz");
       Assert (Expected = Actual, "Addition is incorrect");
    end Test_Simple_Add;
+
+   procedure Test_Simple_Add_2 (T : in out Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      Expected : constant Natural := 0;
+      Actual : Natural;
+   begin
+      Actual := Alog.Lines (Alog.INFO);
+      Assert (Expected = Actual, "Addition is incorrect");
+   end Test_Simple_Add_2;
 
    --  Register test routines to call
    procedure Register_Tests (T : in out Alog_Test) is
@@ -38,6 +49,7 @@ package body Alog_Tests is
    begin
       --  Repeat for each test routine:
       Register_Routine (T, Test_Simple_Add'Access, "Test Addition");
+      Register_Routine (T, Test_Simple_Add_2'Access, "Test Addition 2");
    end Register_Tests;
 
    --  Identifier of test case

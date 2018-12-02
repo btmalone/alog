@@ -1,0 +1,9 @@
+*.o
+*.ali
+*.stderr
+*.stdout
+*.a
+b__*
+test_alog
+*.lexch
+*.bexch
