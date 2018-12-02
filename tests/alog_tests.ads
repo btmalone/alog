@@ -16,31 +16,17 @@
 --
 ------------------------------------------------------------------------
 
-package body Alog.Test is
-   use Assertions;
+with AUnit; use AUnit;
+with AUnit.Test_Cases; use AUnit.Test_Cases;
 
-   procedure BLAH (T : in out Test_Cases.Test_Case'Class);
+package Alog_Tests is
 
-   procedure BLAH (T : in out Test_Cases.Test_Case'Class) is
-      pragma Unreferenced (T);
-      C : Natural;
-   begin
-      C := Lines (ERROR);
-      Assert (C = 0, "Incorrect result after addition");
-   end BLAH;
+   type Alog_Test is new Test_Cases.Test_Case with null record;
 
-   --  Register test routines to call
-   procedure Register_Tests (T : in out Alog_Test) is
-      use Test_Cases.Registration;
-   begin
-      --  Repeat for each test routine:
-      Register_Routine (T, BLAH'Access, "Test Addition");
-   end Register_Tests;
+   --  Register routines to be run
+   procedure Register_Tests (T : in out Alog_Test);
 
-   function Name (T : Test) return Test_String is
-      pragma Unreferenced (T);
-   begin
-      return Format ("Test Alog");
-   end Name;
+   --  Provide name identifying the test case
+   function Name (T : Alog_Test) return Message_String;
 
-end Alog.Test;
+end Alog_Tests;

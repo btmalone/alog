@@ -20,6 +20,6 @@ with AUnit.Test_Suites;
 
 package Alog_Suite is
 
-   function Suite return Aunit.Access_Test_Suite;
+   function Suite return AUnit.Test_Suites.Access_Test_Suite;
 
 end Alog_Suite;

@@ -18,10 +18,10 @@
 
 with AUnit.Reporter.Text;
 with AUnit.Run;
-with Alog_Suite; use Alog_Suite;
+with Alog_Suite;
 
 procedure Test_Alog is
-   procedure Runner is new AUnit.Run.Test_Runner (Suite);
+   procedure Runner is new AUnit.Run.Test_Runner (Alog_Suite.Suite);
    Reporter : AUnit.Reporter.Text.Text_Reporter;
 begin
    Runner (Reporter);

@@ -1,3 +1,5 @@
+--  with "gnat";
+
 project Alog is
 
    for Source_Dirs use ("src");

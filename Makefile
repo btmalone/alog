@@ -3,4 +3,4 @@ all:
 clean:
 	-gprclean -Pharness
 	-gprclean -Palog/alog
-	rm -rf obj alog/obj
+	rm -rf obj alog/obj alog/lib

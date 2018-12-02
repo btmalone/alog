@@ -20,6 +20,8 @@
 --
 --  Ada support for leveled logs. Based on Google's glog
 --
+--  Usage Stuff
+--
 ------------------------------------------------------------------------
 
 with Ada.Calendar;
@@ -27,6 +29,7 @@ with Ada.Calendar.Formatting;
 with Ada.Command_Line;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
+--  with GNAT.Sockets;
 
 package body Alog is
 
@@ -61,13 +64,6 @@ package body Alog is
      (Convention    => C,
       Entity        => Get_PID,
       External_Name => "getpid");
-
-   --  function Get_Hostname (name : access C.int; size : C.int)
-   --  return Integer;
-   --  pragma Import
-   --    (Convention    => C,
-   --     Entity        => Get_Hostname,
-   --     External_Name => "gethostname");
 
    ---------------------------------------------------------------------
    --  Package variables
@@ -129,7 +125,7 @@ package body Alog is
    --  in the defined file location.
    procedure Create_Files is
       cmd  : constant String := Program_Name;
-      host : constant String := "host"; --  ASU.To_String (Get_Hostname);
+      host : constant String := "hostname"; --  GNAT.Sockets.Host_Name;
       user : constant String := AEV.Value ("USER");
       time : constant String := Program_Time;
       pid  : constant String := Integer'Image (Get_PID);
@@ -138,6 +134,7 @@ package body Alog is
       suffix : constant String := "." & time & "." & pid;
    begin
       TIO.Put_Line (host);
+      --  TIO.Put_Line (GNAT.Source_Info.File);
       for lvl in Files'Range loop
          begin
             TIO.Create (File => Files (lvl),

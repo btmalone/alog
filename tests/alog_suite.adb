@@ -16,19 +16,21 @@
 --
 ------------------------------------------------------------------------
 
-with Alog.Test;
+with Alog_Tests;
 
 package body Alog_Suite is
+   use AUnit.Test_Suites;
 
-   -- Statically allocate test suite:
+   --  Statically allocate test suite:
    Result : aliased Test_Suite;
 
    --  Statically allocate test cases:
-   Test_Alog : aliased Alog_Test.Test_Case;
+   Test_Alog : aliased Alog_Tests.Alog_Test;
 
    function Suite return Access_Test_Suite is
    begin
       Add_Test (Result'Access, Test_Alog'Access);
       return Result'Access;
    end Suite;
+
 end Alog_Suite;
