@@ -30,7 +30,8 @@ with Ada.Command_Line;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Ada.Strings.Unbounded;
---  with GNAT.Sockets;
+with GNAT.Sockets;
+--  with GNAT.Source_Info;
 
 package body Alog is
 
@@ -72,6 +73,9 @@ package body Alog is
    --  or greater.
    Stdout_Threshold : Level := ERROR;
 
+   --  Defeault Vlog level is one.
+   Vlog_Threshold : Natural := 1;
+
    --  By default write both to the log files and the console.
    Log_Location : LogTo := BOTH;
 
@@ -104,6 +108,14 @@ package body Alog is
    --  Instance of the lock.
    Lock : Mutex;
 
+   --  type Module_Vloging is record
+   --     Module    : SU.Ubounded_String;
+   --     Threshold : Natural := 0;
+   --  end record;
+
+   --  Array of level stats for each log level.
+   --  type Log_Stats is array (Level) of Level_Stats;
+   --  Stats : Log_Stats;
    ---------------------------------------------------------------------
    --  Private method
    ---------------------------------------------------------------------
@@ -113,7 +125,7 @@ package body Alog is
    --  in the defined file location.
    procedure Create_Files is
       Cmd  : constant String := Program_Name (ACL.Command_Name);
-      Host : constant String := "hostname"; --  GNAT.Sockets.Host_Name;
+      Host : constant String := GNAT.Sockets.Host_Name;
       User : constant String := AEV.Value ("USER");
       Time : constant String := Program_Time (ACF.Image (AC.Clock));
       Pid  : constant String := Integer'Image (Get_PID);
@@ -267,6 +279,15 @@ package body Alog is
       Output (FATAL, Msg);
    end Fatal;
 
+   procedure Vlog (Lvl : Natural;
+                  Msg : String;
+                  Class : String := GNAT.Source_Info.Source_Location) is
+   begin
+      if Lvl <= Vlog_Threshold then
+         TIO.Put_Line (Format_Output (INFO, Class & " " & Msg));
+      end if;
+   end Vlog;
+
    ---------------------------------------------------------------------
    --  Configuration
    ---------------------------------------------------------------------
@@ -296,6 +317,11 @@ package body Alog is
       File_Location := ASU.To_Unbounded_String (Path);
       Files_Location_Set := True;
    end Set_File_Path;
+
+   procedure Set_Vlog_Threshold (Lvl : Natural) is
+   begin
+      Vlog_Threshold := Lvl;
+   end Set_Vlog_Threshold;
 
    ---------------------------------------------------------------------
    --  Statistics

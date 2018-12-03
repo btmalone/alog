@@ -35,6 +35,7 @@ package body Alog.Tests is
    procedure Test_Set_Stdout_Threshold (T : in out Test_Cases.Test_Case'Class);
    procedure Test_Set_Stdout_Threshold_String
       (T : in out Test_Cases.Test_Case'Class);
+   procedure Test_Vlog (T : in out Test_Cases.Test_Case'Class);
 
    --  Logs start at zero.
    procedure Test_Logs_Initialize (T : in out Test_Cases.Test_Case'Class) is
@@ -185,6 +186,12 @@ package body Alog.Tests is
       Info ("foo bar buzz");
    end Test_Set_Stdout_Threshold_String;
 
+   procedure Test_Vlog (T : in out Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+   begin
+      Vlog (0, "foo bar buzz");
+   end Test_Vlog;
+
    --  Reset the Log stats so we can start fresh in every test case.
    procedure Set_Up (T : in out Alog_Test) is
       pragma Unreferenced (T);
@@ -213,6 +220,7 @@ package body Alog.Tests is
          "Test Set Stdout Threshold");
       Register_Routine (T, Test_Set_Stdout_Threshold_String'Access,
          "Test Set Stdout Threshold String");
+      Register_Routine (T, Test_Vlog'Access, "Test Vlog");
    end Register_Tests;
 
    --  Identifier of test case

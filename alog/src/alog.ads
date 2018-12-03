@@ -21,6 +21,7 @@
 --  Ada support for leveled logs. Based on Google's glog
 --
 ------------------------------------------------------------------------
+with GNAT.Source_Info;
 
 package Alog is
 
@@ -50,6 +51,10 @@ package Alog is
    procedure Error (Msg : String);
    procedure Fatal (Msg : String);
 
+   procedure Vlog (Lvl : Natural;
+                  Msg  : String;
+                  Class : String := GNAT.Source_Info.Source_Location);
+
    ---------------------------------------------------------------------
    --  Configuration
    ---------------------------------------------------------------------
@@ -68,6 +73,9 @@ package Alog is
 
    --  Set where the log files shoudl be saved.
    procedure Set_File_Path (Path : String);
+
+   --  Set the Vlog Threshold.
+   procedure Set_Vlog_Threshold (Lvl : Natural);
 
    ---------------------------------------------------------------------
    --  Statistics
