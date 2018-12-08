@@ -21,6 +21,7 @@
 --  Ada support for leveled logs. Based on Google's glog
 --
 ------------------------------------------------------------------------
+
 with GNAT.Source_Info;
 
 package Alog is
@@ -77,6 +78,9 @@ package Alog is
    --  Set the Vlog Threshold.
    procedure Set_Vlog_Threshold (Lvl : Natural);
 
+   --  blah
+   procedure Set_Vlog_Modules (Mods : String);
+
    ---------------------------------------------------------------------
    --  Statistics
    ---------------------------------------------------------------------
@@ -96,6 +100,8 @@ private
 
    function Program_Name (Cmd : String) return String;
    function Program_Time (Time : String) return String;
+
+   procedure Vmodule_Setup (Mods : String);
 
    Files_Created : Boolean := False;
    Files_Location_Set : Boolean := False;

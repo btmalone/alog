@@ -31,7 +31,7 @@ with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Ada.Strings.Unbounded;
 with GNAT.Sockets;
---  with GNAT.Source_Info;
+with Ada.Integer_Text_IO;
 
 package body Alog is
 
@@ -251,6 +251,46 @@ package body Alog is
       Lock.Release;
    end Output;
 
+   procedure Vmodule_Setup (Mods : String) is
+      First : Natural := Mods'First;
+      Equal_Pos : Natural;
+      Failed : Boolean := True;
+      Module : ASU.Unbounded_String;
+      Temp   : ASU.Unbounded_String;
+      Value  : Natural;
+   begin
+      for i in Mods'Range loop
+         case Mods (i) is
+            when '=' =>
+               --  Saw an equal sign so the string was okay.
+               --  If something else is messed up throw an error
+               Failed := False;
+               Equal_Pos := i;
+               Module := ASU.To_Unbounded_String (Mods (First .. (i - 1)));
+            when ',' =>
+               Temp := ASU.To_Unbounded_String
+                  (Mods ((Equal_Pos + 1) .. (i - 1)));
+               Value := Natural'Value (ASU.To_String (Temp));
+               TIO.Put_Line (ASU.To_String (Module));
+               Ada.Integer_Text_IO.Put (Value);
+               First := i + 1;
+            when others =>
+               null;
+         end case;
+      end loop;
+      --  Add the last module and number here since the loop broke.
+      Temp := ASU.To_Unbounded_String (Mods ((Equal_Pos + 1) .. Mods'Last));
+      Value := Natural'Value (ASU.To_String (Temp));
+
+      TIO.Put_Line (ASU.To_String (Module));
+      Ada.Integer_Text_IO.Put (Value);
+
+      if Failed then
+         raise Program_Error with "VMODULE STRING INCORRECT";
+      end if;
+   end Vmodule_Setup;
+
+
    ---------------------------------------------------------------------
    --  Public methods
    ---------------------------------------------------------------------
@@ -280,8 +320,8 @@ package body Alog is
    end Fatal;
 
    procedure Vlog (Lvl : Natural;
-                  Msg : String;
-                  Class : String := GNAT.Source_Info.Source_Location) is
+                   Msg : String;
+                   Class : String := GNAT.Source_Info.Source_Location) is
    begin
       if Lvl <= Vlog_Threshold then
          TIO.Put_Line (Format_Output (INFO, Class & " " & Msg));
@@ -322,6 +362,11 @@ package body Alog is
    begin
       Vlog_Threshold := Lvl;
    end Set_Vlog_Threshold;
+
+   procedure Set_Vlog_Modules (Mods : String) is
+   begin
+      Vmodule_Setup (Mods);
+   end Set_Vlog_Modules;
 
    ---------------------------------------------------------------------
    --  Statistics
