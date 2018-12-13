@@ -20,7 +20,7 @@
 --
 --  Ada support for leveled logs. Based on Google's glog
 --
---  Usage Stuff
+--  TODO Usage Stuff
 --
 ------------------------------------------------------------------------
 
@@ -31,7 +31,6 @@ with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Ada.Strings.Unbounded;
 with GNAT.Sockets;
-with Ada.Integer_Text_IO;
 
 package body Alog is
 
@@ -40,7 +39,6 @@ package body Alog is
    package ACL renames Ada.Command_Line;
    package TIO renames Ada.Text_IO;
    package AEV renames Ada.Environment_Variables;
-   package ASU renames Ada.Strings.Unbounded;
 
    ---------------------------------------------------------------------
    --  Private method declarations
@@ -108,14 +106,13 @@ package body Alog is
    --  Instance of the lock.
    Lock : Mutex;
 
-   --  type Module_Vloging is record
-   --     Module    : SU.Ubounded_String;
-   --     Threshold : Natural := 0;
-   --  end record;
+   function Equivalent_Strings (Left, Right : ASU.Unbounded_String)
+      return Boolean is
+      use ASU;
+   begin
+      return Left = Right;
+   end Equivalent_Strings;
 
-   --  Array of level stats for each log level.
-   --  type Log_Stats is array (Level) of Level_Stats;
-   --  Stats : Log_Stats;
    ---------------------------------------------------------------------
    --  Private method
    ---------------------------------------------------------------------
@@ -263,7 +260,7 @@ package body Alog is
          case Mods (i) is
             when '=' =>
                --  Saw an equal sign so the string was okay.
-               --  If something else is messed up throw an error
+               --  If something else is messed up it will throw an error
                Failed := False;
                Equal_Pos := i;
                Module := ASU.To_Unbounded_String (Mods (First .. (i - 1)));
@@ -271,8 +268,7 @@ package body Alog is
                Temp := ASU.To_Unbounded_String
                   (Mods ((Equal_Pos + 1) .. (i - 1)));
                Value := Natural'Value (ASU.To_String (Temp));
-               TIO.Put_Line (ASU.To_String (Module));
-               Ada.Integer_Text_IO.Put (Value);
+               Modules_Map.Insert (Module, Value);
                First := i + 1;
             when others =>
                null;
@@ -282,13 +278,27 @@ package body Alog is
       Temp := ASU.To_Unbounded_String (Mods ((Equal_Pos + 1) .. Mods'Last));
       Value := Natural'Value (ASU.To_String (Temp));
 
-      TIO.Put_Line (ASU.To_String (Module));
-      Ada.Integer_Text_IO.Put (Value);
-
+      Modules_Map.Insert (Module, Value);
       if Failed then
          raise Program_Error with "VMODULE STRING INCORRECT";
       end if;
    end Vmodule_Setup;
+
+
+   function Format_Module (Source : String) return String is
+      Temp : ASU.Unbounded_String;
+   begin
+      for i in Source'Range loop
+         case Source (i) is
+            when '.' =>
+               Temp := ASU.To_Unbounded_String
+                  (Source (Source'First .. (i - 1)));
+            when others =>
+               null;
+         end case;
+      end loop;
+      return ASU.To_String (Temp);
+   end Format_Module;
 
 
    ---------------------------------------------------------------------
@@ -321,11 +331,22 @@ package body Alog is
 
    procedure Vlog (Lvl : Natural;
                    Msg : String;
-                   Class : String := GNAT.Source_Info.Source_Location) is
+                   Source : String := GNAT.Source_Info.Source_Location) is
+      Temp : ASU.Unbounded_String;
    begin
-      if Lvl <= Vlog_Threshold then
-         TIO.Put_Line (Format_Output (INFO, Class & " " & Msg));
+      if Modules_Map.Is_Empty then
+         if Lvl <= Vlog_Threshold then
+            TIO.Put_Line (Format_Output (INFO, Source & " " & Msg));
+         end if;
+      else
+         Temp := ASU.To_Unbounded_String (Format_Module (Source));
+         if Lvl <= Modules_Map.Element (Temp) then
+            TIO.Put_Line (Format_Output (INFO, Source & " " & Msg));
+         end if;
       end if;
+   exception
+      when others =>
+         null;
    end Vlog;
 
    ---------------------------------------------------------------------

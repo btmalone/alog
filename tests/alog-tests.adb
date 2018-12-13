@@ -37,6 +37,7 @@ package body Alog.Tests is
       (T : in out Test_Cases.Test_Case'Class);
    procedure Test_Vlog (T : in out Test_Cases.Test_Case'Class);
    procedure Test_Vmodule_Setup (T : in out Test_Cases.Test_Case'Class);
+   procedure Test_Format_Module (T : in out Test_Cases.Test_Case'Class);
 
    --  Logs start at zero.
    procedure Test_Logs_Initialize (T : in out Test_Cases.Test_Case'Class) is
@@ -197,16 +198,24 @@ package body Alog.Tests is
       pragma Unreferenced (T);
    begin
       Vmodule_Setup ("foo=0");
-      Vmodule_Setup ("foo=22,barbuzz=2");
+      Modules_Map.Clear;
+      Vmodule_Setup ("fooa=22,barbuzz=2");
    end Test_Vmodule_Setup;
+
+   procedure Test_Format_Module (T : in out Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+   begin
+      Assert ("test-file" = Format_Module ("test-file.adb:100"), "asdf");
+   end Test_Format_Module;
 
    --  Reset the Log stats so we can start fresh in every test case.
    procedure Set_Up (T : in out Alog_Test) is
       pragma Unreferenced (T);
    begin
-      for lvl in Level'Range loop
-         Stats (lvl).Lines := 0;
+      for Lvl in Level'Range loop
+         Stats (Lvl).Lines := 0;
       end loop;
+      Modules_Map.Clear;
    end Set_Up;
 
    --  Register test routines to call
@@ -230,6 +239,7 @@ package body Alog.Tests is
          "Test Set Stdout Threshold String");
       Register_Routine (T, Test_Vlog'Access, "Test Vlog");
       Register_Routine (T, Test_Vmodule_Setup'Access, "Test Vmodule Setup");
+      Register_Routine (T, Test_Format_Module'Access, "Test Format Module");
    end Register_Tests;
 
    --  Identifier of test case

@@ -23,8 +23,12 @@
 ------------------------------------------------------------------------
 
 with GNAT.Source_Info;
+with Ada.Containers.Hashed_Maps;
+with Ada.Strings.Unbounded.Hash;
 
 package Alog is
+
+   package ASU renames Ada.Strings.Unbounded;
 
    --  Four levels of loggging.
    type Level is (
@@ -54,7 +58,7 @@ package Alog is
 
    procedure Vlog (Lvl : Natural;
                   Msg  : String;
-                  Class : String := GNAT.Source_Info.Source_Location);
+                  Source : String := GNAT.Source_Info.Source_Location);
 
    ---------------------------------------------------------------------
    --  Configuration
@@ -100,10 +104,22 @@ private
 
    function Program_Name (Cmd : String) return String;
    function Program_Time (Time : String) return String;
+   function Format_Module (Source : String) return String;
 
    procedure Vmodule_Setup (Mods : String);
 
    Files_Created : Boolean := False;
    Files_Location_Set : Boolean := False;
+
+   function Equivalent_Strings (Left, Right : ASU.Unbounded_String)
+      return Boolean;
+
+   package Module is new Ada.Containers.Hashed_Maps
+     (Key_Type => ASU.Unbounded_String,
+      Element_Type => Natural,
+      Hash => ASU.Hash,
+      Equivalent_Keys => Equivalent_Strings);
+
+   Modules_Map : Module.Map;
 
 end Alog;
