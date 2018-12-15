@@ -200,6 +200,10 @@ package body Alog.Tests is
       Vmodule_Setup ("foo=0");
       Modules_Map.Clear;
       Vmodule_Setup ("fooa=22,barbuzz=2");
+      Modules_Map.Clear;
+      Vmodule_Setup ("alog-tests=2,asdf=2");
+      Vlog (3, "Not Logged");
+      Vlog (2, "Logged");
    end Test_Vmodule_Setup;
 
    procedure Test_Format_Module (T : in out Test_Cases.Test_Case'Class) is
